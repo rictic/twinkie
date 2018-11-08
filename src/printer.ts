@@ -373,21 +373,21 @@ function printChildrenType(children: AST_TREE, arrayType?: string): string {
 function expressionToString(expression: EXPRESSION = EXPRESSION.VALUE) {
   switch (expression) {
     case EXPRESSION.LIST:
-      return "null|undefined|ArrayLike<any|null|undefined>";
+      return "null|undefined|ArrayLike<any>";
     case EXPRESSION.VALUE:
-      return "any|null|undefined";
+      return "any";
     case EXPRESSION.FUNCTION:
-      return "(() => any|null|undefined)|null|undefined";
+      return "(() => any)|null|undefined";
   }
 
-  return "any|null|undefined";
+  return "any";
 }
 
 function argumentCountToArgs(count: number) {
   return new Array(count)
     .fill("")
     .map((_, i) => {
-      return `arg${i}: any|null|undefined`;
+      return `arg${i}: any`;
     })
     .join(", ");
 }
@@ -406,7 +406,7 @@ function printListIndexType(node: AST_NODE): string {
       node.listIndexType!
     )}|null|undefined>`;
   } else if (node.type === EXPRESSION.LIST) {
-    return `null|undefined|ArrayLike<any|null|undefined>`;
+    return `null|undefined|ArrayLike<any>`;
   }
 
   return "";
@@ -435,21 +435,21 @@ function printExpressionType(node: AST_NODE) {
   if (node.type === EXPRESSION.VALUE) {
     return treeHasNodes(node.children)
       ? printChildrenType(node.children!, printListIndexType(node))
-      : "any|null|undefined";
+      : "any";
   }
 
   if (node.type === EXPRESSION.LIST) {
     if (treeHasNodes(node.listIndexType) || treeHasNodes(node.children)) {
       return printChildrenType(node.children || {}, printListIndexType(node));
     }
-    return "null|undefined|ArrayLike<any|null|undefined>";
+    return "null|undefined|ArrayLike<any>";
   }
 
   if (node.type === EXPRESSION.FUNCTION) {
     return printFunctionExpression(node);
   }
 
-  return "any|null|undefined";
+  return "any";
 }
 
 function kebabCaseToCamelCase(kebab: string): string {
