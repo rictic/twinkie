@@ -206,8 +206,8 @@
  */
 
 // @ts-check
-const generateInterface = require('.').generateInterface;
-const generateFauxUse = require('.').generateFauxUse;
+const generateInterface = require('./lib').generateInterface;
+const generateFauxUse = require('./lib').generateFauxUse;
 const args = process.argv.slice(2);
 
 if (args.indexOf('--print-use') != -1) {

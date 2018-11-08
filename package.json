@@ -3,11 +3,11 @@
     "cheerio": "^1.0.0-rc.2"
   },
   "scripts": {
-    "test": "mocha -r ts-node/register *_test.ts",
-    "test-watch": "mocha -R spec -r ts-node/register *_test.ts --watch-extensions=ts -w",
+    "test": "mocha -r ts-node/register src/*_test.ts",
+    "test-watch": "mocha -R spec -r ts-node/register src/*_test.ts --watch-extensions=ts -w",
     "build": "tsc",
-    "format": "prettier -w *.ts",
-    "format-lint": "prettier --list-different *.ts"
+    "format": "prettier -w src/*.ts",
+    "format-lint": "prettier --list-different src/*.ts"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",

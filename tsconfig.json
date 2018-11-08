@@ -9,8 +9,9 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "strict": true,
-    "lib": ["es2017"]
+    "lib": ["es2017"],
+    "outDir": "lib"
   },
   "exclude": ["node_modules"],
-  "include": ["*.ts", "*.d.ts"]
+  "include": ["src/**/*.ts"]
 }
