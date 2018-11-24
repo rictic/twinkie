@@ -205,44 +205,30 @@
  */
 
 import { expect } from "chai";
-import { nodesToTree } from "./ast_tree_builder";
-import { walkNodes } from "./dom_walker";
-import * as Cheerio from "cheerio";
-import { AliasMap, AST_NODE } from "./types";
-import { getExpressionsForNode } from "./ast_builder";
 import { printTree, printUse } from "./printer";
-
-function astTreeFromString(str: string) {
-  const parsed = Cheerio.parseHTML(str);
-  const aliasMap: AliasMap = {};
-  const nodes: AST_NODE[] = [];
-
-  parsed.forEach(node => {
-    walkNodes(node, aliasMap, (node: CheerioElement, aliasMap: AliasMap) => {
-      nodes.push(...getExpressionsForNode(node, aliasMap));
-    });
-  });
-
-  return nodesToTree(nodes);
-}
+import { analyzeSource } from ".";
 
 describe("print use", () => {
   it("handles undefined check", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
         <p>[[a.f(1, 2, a.b)]]</p>
     `),
-        "FooView",
+        "FooElement",
         {undefinedCheck: true}
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     this.a;
     this.a!.f!(undefined, undefined, undefined);
     this.a!.b;
+    {
+      let pElem: ElementTagNameMap['p'];
+      pElem = document.querySelector('p')!;
+    }
   }
 }
     `.trim()
@@ -252,19 +238,19 @@ class FooViewUseChecker extends FooView {
   it("handles objects", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
         <p>[[b]]</p>
         <p>[[b.c]]</p>
         <p>[[b.c.d]]</p>
         <p>[[a.d]]</p>
         <p>[[a.f(1, 2, a.b)]]</p>
     `),
-        "FooView"
+        "FooElement"
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     this.b;
     this.b!.c;
     this.b!.c!.d;
@@ -272,6 +258,10 @@ class FooViewUseChecker extends FooView {
     this.a!.d;
     this.a!.f!(null!, null!, null!);
     this.a!.b;
+    {
+      let pElem: ElementTagNameMap['p'];
+      pElem = document.querySelector('p')!;
+    }
   }
 }
     `.trim()
@@ -281,20 +271,24 @@ class FooViewUseChecker extends FooView {
   it("handles reading prop of list", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
       [[a.people.length]]
       <template is="dom-repeat" items="[[a.people]]">[[item.name]]</template>
     `),
-        "FooView"
+        "FooElement"
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     this.a;
     {const _: Array<any> = this.a!.people!;}
     this.a!.people!.length;
     this.a!.people![0]!.name;
+    {
+      let templateElem: ElementTagNameMap['template'];
+      templateElem = document.querySelector('template')!;
+    }
   }
 }
     `.trim()
@@ -304,7 +298,7 @@ class FooViewUseChecker extends FooView {
   it("handles arrays", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
       <template is="dom-repeat" items="[[items]]" index-as="zap">
         [[zap]]
         [[item.wow]]
@@ -313,16 +307,20 @@ class FooViewUseChecker extends FooView {
         </template>
       </template>
     `),
-        "FooView"
+        "FooElement"
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     {const _: Array<any> = this.items!;}
     this.items![0]!.wow;
     {const _: Array<any> = this.items![0]!.foo!;}
     this.items![0]!.foo![0]!.amaze;
+    {
+      let templateElem: ElementTagNameMap['template'];
+      templateElem = document.querySelector('template')!;
+    }
   }
 }
     `.trim()
@@ -332,20 +330,20 @@ class FooViewUseChecker extends FooView {
   it("handles binding to custom element properties", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
       <foo-bar baz="{{qux.zot}}" zim={{loot.vo}} attr$="{{kapow}}">
       </foo-bar>
       <template zot="{{clump()}}"></template>
       <template is="dom-if" if="{{good}}"></template>
       <foo-bar blip="bip-{{zim}}-zop"></foo-bar>
     `),
-        "FooView",
+        "FooElement",
         {typeCheckPropertyBindings: true}
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     {
       const fooBarElem: ElementTagNameMap['foo-bar'] = null!;
       fooBarElem.baz = this.qux!.zot;
@@ -368,6 +366,14 @@ class FooViewUseChecker extends FooView {
     }
     this.good;
     this.zim;
+    {
+      let fooBarElem: ElementTagNameMap['foo-bar'];
+      fooBarElem = document.querySelector('foo-bar')!;
+    }
+    {
+      let templateElem: ElementTagNameMap['template'];
+      templateElem = document.querySelector('template')!;
+    }
   }
 }
     `.trim()
@@ -377,26 +383,34 @@ class FooViewUseChecker extends FooView {
   it("handles binding to custom element properties", () => {
     expect(
       printUse(
-        astTreeFromString(`
+        analyzeSource(`
       <foo-bar baz="{{qux.zot}}" zim={{loot.vo}} attr$="{{kapow}}">
       </foo-bar>
       <template zot="{{clump()}}"></template>
       <template is="dom-if" if="{{good}}"></template>
       <foo-bar blip="bip-{{zim}}-zop"></foo-bar>
     `),
-        "FooView",
+        "FooElement",
         {typeCheckPropertyBindings: false}
       ).trim()
     ).to.deep.equal(
       `
-class FooViewUseChecker extends FooView {
-  __useCheckerTestFunc() {
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
     this.qux!.zot;
     this.loot!.vo;
     this.kapow;
     this.clump!();
     this.good;
     this.zim;
+    {
+      let fooBarElem: ElementTagNameMap['foo-bar'];
+      fooBarElem = document.querySelector('foo-bar')!;
+    }
+    {
+      let templateElem: ElementTagNameMap['template'];
+      templateElem = document.querySelector('template')!;
+    }
   }
 }
     `.trim()
@@ -408,13 +422,13 @@ describe("printing", () => {
   it("handles index-as aliasing", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
       <template is="dom-repeat" items="[[items]]" index-as="zap">
         [[zap]]
       </template>
-    `)
+    `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 items: null|undefined|ArrayLike<any>;
 };`);
   });
@@ -422,7 +436,7 @@ items: null|undefined|ArrayLike<any>;
   it("handles complex aliasing and nested loops", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <table id="changeList">
       <tr class=  "headerRow">
         <th class="topHeader keyboard"></th>
@@ -449,9 +463,9 @@ items: null|undefined|ArrayLike<any>;
         </template>
       </template>
     </table>
-    `)
+    `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 showStar: any;
 showNumber: any;
 changeTableColumns: null|undefined|ArrayLike<any>;
@@ -469,12 +483,12 @@ account: any;
   it("handles multi-level dom-repeat aliasing", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
       <template is="dom-repeat" items="[[items]]" as="foos">
         <template is="dom-repeat" items="[[foos]]" as="zap">[[zap.tap]]</template>
-      </template>`)
+      </template>`).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 items: null|undefined|ArrayLike<null|undefined|ArrayLike<null|undefined|{tap: any;}|null|undefined> & null|undefined|{}> & null|undefined|{};
 };`);
   });
@@ -482,16 +496,16 @@ items: null|undefined|ArrayLike<null|undefined|ArrayLike<null|undefined|{tap: an
   it("handles 3-dimensional dom-repeat aliasing", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
       <template is="dom-repeat" items="[[items]]" as="foos">
         <template is="dom-repeat" items="[[foos]]" as="zaps">
           <template is="dom-repeat" items="[[zaps]]" as="tap">
             [[tap.a]]
           </template>
         </template>
-      </template>`)
+      </template>`).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 items: null|undefined|ArrayLike<null|undefined|ArrayLike<null|undefined|ArrayLike<null|undefined|{a: any;}|null|undefined> & null|undefined|{}> & null|undefined|{}> & null|undefined|{};
 };`);
   });
@@ -499,11 +513,11 @@ items: null|undefined|ArrayLike<null|undefined|ArrayLike<null|undefined|ArrayLik
   it("handles a function with a -1 param", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           [[foo(-1)]]
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: (arg0: any) => any;
 };`);
   });
@@ -511,13 +525,13 @@ foo: (arg0: any) => any;
   it("handles dom-repeat when using index", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <template is="dom-repeat" items="[[zap]]">
               [[index]]
             </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 zap: null|undefined|ArrayLike<any>;
 };`);
   });
@@ -525,13 +539,13 @@ zap: null|undefined|ArrayLike<any>;
   it("handles dom-repeat when using index as function arg", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <template is="dom-repeat" items="[[zap]]">
               [[foo(index)]]
             </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 zap: null|undefined|ArrayLike<any>;
 foo: (arg0: any) => any;
 };`);
@@ -540,13 +554,13 @@ foo: (arg0: any) => any;
   it("handles dom-repeat when alias value is used as an arg", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <template is="dom-repeat" items="[[zap]]">
               <p>[[someCall(item.foo)]]</p>
             </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 zap: null|undefined|ArrayLike<null|undefined|{foo: any;}|null|undefined> & null|undefined|{};
 someCall: (arg0: any) => any;
 };`);
@@ -554,13 +568,13 @@ someCall: (arg0: any) => any;
   it("handes dom-repeat as function with * observer", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <template is="dom-repeat" items="[[getFoo(bob.tap.*)]]">
               <template is="dom-repeat" items="[[item.foo]]"></template>
             </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 getFoo: (arg0: any) => null|undefined|ArrayLike<null|undefined|{foo: null|undefined|ArrayLike<any>;}|null|undefined> & null|undefined|{};
 bob: null|undefined|{tap: any;};
 };`);
@@ -569,11 +583,11 @@ bob: null|undefined|{tap: any;};
   it("handles a function on-* case", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <div on-z="wow">hi bobby</div>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 wow: (arg0: any) => any;
 };`);
   });
@@ -581,12 +595,12 @@ wow: (arg0: any) => any;
   it("handles a simple case", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <div>[[a]]</div>
             <div>[[b(c, d)]]</div>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 a: any;
 b: (arg0: any, arg1: any) => any;
 c: any;
@@ -597,13 +611,13 @@ d: any;
   it("handles nested case", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <div>[[a]]</div>
             <div>[[a.d]]</div>
             <div>[[a.b.c]]</div>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 a: null|undefined|{d: any; b: null|undefined|{c: any;};};
 };`);
   });
@@ -611,11 +625,11 @@ a: null|undefined|{d: any; b: null|undefined|{c: any;};};
   it("handles function with nested props", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
             <div>[[a().z]]</div>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 a: () => null|undefined|{z: any;};
 };`);
   });
@@ -623,12 +637,12 @@ a: () => null|undefined|{z: any;};
   it("handles dom-repeat as function", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           <template is="dom-repeat" items="[[foo()]]">
           </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: () => null|undefined|ArrayLike<any>;
 };`);
   });
@@ -636,13 +650,13 @@ foo: () => null|undefined|ArrayLike<any>;
   it("handles dom-repeat as function when using child attrs", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           <template is="dom-repeat" items="[[foo()]]">
             [[item.ok]]
           </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: () => null|undefined|ArrayLike<null|undefined|{ok: any;}|null|undefined> & null|undefined|{};
 };`);
   });
@@ -650,13 +664,13 @@ foo: () => null|undefined|ArrayLike<null|undefined|{ok: any;}|null|undefined> & 
   it("handles dom-repeat and has child attrs", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           <p>[[foo.p]]</p>
           <template is="dom-repeat" items="[[foo]]">
           </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: null|undefined|ArrayLike<any> & null|undefined|{p: any;};
 };`);
   });
@@ -664,7 +678,7 @@ foo: null|undefined|ArrayLike<any> & null|undefined|{p: any;};
   it("handles very nested dom-repeats", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           <template is="dom-repeat" items="[[foo]]">
             <template is="dom-repeat" items="[[item.tap]]" as="bob">
               <template is="dom-repeat" items="[[bob.zap]]" as="next">
@@ -673,9 +687,9 @@ foo: null|undefined|ArrayLike<any> & null|undefined|{p: any;};
               </template>
             </template>
           </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: null|undefined|ArrayLike<null|undefined|{tap: null|undefined|ArrayLike<null|undefined|{zap: null|undefined|ArrayLike<null|undefined|{foo: (arg0: any, arg1: any) => any; wow: null|undefined|ArrayLike<any>;}|null|undefined> & null|undefined|{};}|null|undefined> & null|undefined|{};}|null|undefined> & null|undefined|{};
 };`);
   });
@@ -683,16 +697,16 @@ foo: null|undefined|ArrayLike<null|undefined|{tap: null|undefined|ArrayLike<null
   it("handles nested dom-repeats", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
           <template is="dom-repeat" items="[[foo]]">
             [[item.wow]]
             <template is="dom-repeat" items="[[item.tap]]" as="bob">
               [[bob.name]]
             </template>
           </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: null|undefined|ArrayLike<null|undefined|{wow: any; tap: null|undefined|ArrayLike<null|undefined|{name: any;}|null|undefined> & null|undefined|{};}|null|undefined> & null|undefined|{};
 };`);
   });
@@ -700,7 +714,7 @@ foo: null|undefined|ArrayLike<null|undefined|{wow: any; tap: null|undefined|Arra
   it("handles a dom-repeat case", () => {
     expect(
       printTree(
-        astTreeFromString(`
+        analyzeSource(`
         <p>[[foo.abc]]</p>
         <template is="dom-repeat" items="[[foo]]">
             <div>[[item.zap]]</div>
@@ -708,9 +722,9 @@ foo: null|undefined|ArrayLike<null|undefined|{wow: any; tap: null|undefined|Arra
         <template is="dom-repeat" items="[[foo]]">
             <div>[[item.tap]]</div>
         </template>
-        `)
+        `).tree
       )
-    ).to.deep.equal(`export interface View {
+    ).to.deep.equal(`export interface ElementInterface {
 foo: null|undefined|ArrayLike<null|undefined|{zap: any; tap: any;}|null|undefined> & null|undefined|{abc: any;};
 };`);
   });

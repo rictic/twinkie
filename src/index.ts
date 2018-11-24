@@ -207,7 +207,7 @@
 import * as fs from "fs";
 import * as Cheerio from "cheerio";
 import { walkNodes } from "./dom_walker";
-import { AliasMap, AST_NODE } from "./types";
+import { AliasMap, AST_NODE, AST_TREE } from "./types";
 import { getExpressionsForNode } from "./ast_builder";
 import { nodesToTree } from "./ast_tree_builder";
 import { printTree, printUse } from "./printer";
@@ -217,26 +217,41 @@ export interface Config {
   typeCheckPropertyBindings?: boolean;
 }
 
-function getTree(htmlPath: string) {
+export interface Analysis {
+  tree: AST_TREE;
+  tagNames: Set<string>;
+}
+
+export function analyze(htmlPath: string): Analysis {
+  return analyzeSource(fs.readFileSync(htmlPath, "utf-8"));
+}
+
+export function analyzeSource(htmlSource: string): Analysis {
   const nodes: AST_NODE[] = [];
-  const sample = fs.readFileSync(htmlPath, "utf-8");
-  const parsed = Cheerio.parseHTML(sample);
+  const tagNames = new Set<string>();
+  const parsed = Cheerio.parseHTML(htmlSource);
   const aliasMap: AliasMap = {};
 
   parsed.forEach(node => {
     walkNodes(node, aliasMap, (node: CheerioElement, aliasMap: AliasMap) => {
       nodes.push(...getExpressionsForNode(node, aliasMap));
+      // Cheerio uses a tagName of 'root' to mean something similar to
+      // #documentFragment.
+      if (node.tagName && node.tagName !== 'root') {
+        tagNames.add(node.tagName);
+      }
     });
   });
 
-  return nodes;
+  const tree = nodesToTree(nodes);
+  return {tree, tagNames};
 }
 
 export function generateInterface(
   htmlPath: string,
   interfaceName: string = "TemplateInterface"
 ) {
-  return printTree(nodesToTree(getTree(htmlPath)), interfaceName);
+  return printTree(analyze(htmlPath).tree, interfaceName);
 }
 
 export function generateFauxUse(
@@ -245,7 +260,7 @@ export function generateFauxUse(
   config: Config,
 ) {
   return printUse(
-    nodesToTree(getTree(htmlPath)),
+    analyze(htmlPath),
     interfaceName,
     config
   );

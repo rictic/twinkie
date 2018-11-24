@@ -205,9 +205,9 @@
  */
 
 import { AST_NODE, AST_TREE, EXPRESSION } from "./types";
-import { Config } from ".";
+import { Config, Analysis } from ".";
 
-export function printTree(tree: AST_TREE, interfaceName = "View") {
+export function printTree(tree: AST_TREE, interfaceName = "ElementInterface") {
   let ret = "";
 
   ret += `export interface ${interfaceName} {\n`;
@@ -224,16 +224,15 @@ export function printTree(tree: AST_TREE, interfaceName = "View") {
 }
 
 export function printUse(
-  tree: AST_TREE,
+  analysis: Analysis,
   realType: string,
   config: Config={},
 ) {
   const ret = [
-    `class ${realType}UseChecker extends ${realType} {\n`,
-    "  __useCheckerTestFunc() {\n",
+    `class ${realType}Databindings extends ${realType} {\n`,
+    "  __databindingTypeCheckFunc() {\n",
   ];
-  for (const expressionKey of Object.keys(tree)) {
-    const node = tree[expressionKey];
+  for (const node of Object.values(analysis.tree)) {
     let expressionUses;
     if (config.undefinedCheck) {
       expressionUses = getNodeUses(node, "undefined");
@@ -256,6 +255,19 @@ export function printUse(
         ret.push(`    {const _: ${use.type} = this.${use.expression};}\n`);
       }
     }
+  }
+  // Make sure that every HTML tag that we see is known to TypeScript.
+  // This will catch errors like typos in tag names, forgetting to register
+  // a new custom element in the HTMLElementTagNameMap, and forgetting to
+  // import your dependencies.
+  for (const tagName of analysis.tagNames) {
+    const varName = `${kebabCaseToCamelCase(tagName)}Elem`;
+    ret.push(
+      `    {\n` +
+      `      let ${varName}: ElementTagNameMap['${tagName}'];\n` +
+      `      ${varName} = document.querySelector('${tagName}')!;\n` +
+      `    }\n`
+    )
   }
 
   ret.push("  }\n", "}\n");
