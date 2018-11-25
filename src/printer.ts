@@ -247,20 +247,22 @@ export function printUse(
       }
     }
   }
-  // Make sure that every HTML tag that we see is known to TypeScript.
-  // This will catch errors like typos in tag names, forgetting to register
-  // a new custom element in the HTMLElementTagNameMap, and forgetting to
-  // import your dependencies.
-  for (const tagName of analysis.tagNames) {
-    const varName = `${kebabCaseToCamelCase(tagName)}Elem`;
-    ret.push(
-      `    {\n` +
-        `      let ${varName}: ElementTagNameMap['${tagName}'];\n` +
-        `      ${varName} = document.querySelector('${tagName}')!;\n` +
-        `    }\n`
-    );
-  }
   if (config.typeCheckPropertyBindings) {
+    // Make sure that every HTML tag that we see is known to TypeScript.
+    // This will catch errors like typos in tag names, forgetting to register
+    // a new custom element in the HTMLElementTagNameMap, and forgetting to
+    // import your dependencies.
+    for (const tagName of analysis.tagNames) {
+      const varName = `${kebabCaseToCamelCase(tagName)}Elem`;
+      ret.push(
+        `    {\n` +
+          `      let ${varName}: ElementTagNameMap['${tagName}'];\n` +
+          `      ${varName} = document.querySelector('${tagName}')!;\n` +
+          `    }\n`
+      );
+    }
+
+    // Generate type checks for databinding to properties on elements.
     for (const propertyBinding of analysis.propertyBindings) {
       let expressionUses;
       if (config.undefinedCheck) {

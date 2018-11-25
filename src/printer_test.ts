@@ -225,10 +225,6 @@ class FooElementDatabindings extends FooElement {
     this.a;
     this.a!.f!(undefined, undefined, undefined);
     this.a!.b;
-    {
-      let pElem: ElementTagNameMap['p'];
-      pElem = document.querySelector('p')!;
-    }
   }
 }
     `.trim()
@@ -258,10 +254,6 @@ class FooElementDatabindings extends FooElement {
     this.a!.d;
     this.a!.f!(null!, null!, null!);
     this.a!.b;
-    {
-      let pElem: ElementTagNameMap['p'];
-      pElem = document.querySelector('p')!;
-    }
   }
 }
     `.trim()
@@ -285,10 +277,6 @@ class FooElementDatabindings extends FooElement {
     {const _: Array<any> = this.a!.people!;}
     this.a!.people!.length;
     this.a!.people![0]!.name;
-    {
-      let templateElem: ElementTagNameMap['template'];
-      templateElem = document.querySelector('template')!;
-    }
   }
 }
     `.trim()
@@ -317,10 +305,6 @@ class FooElementDatabindings extends FooElement {
     this.items![0]!.wow;
     {const _: Array<any> = this.items![0]!.foo!;}
     this.items![0]!.foo![0]!.amaze;
-    {
-      let templateElem: ElementTagNameMap['template'];
-      templateElem = document.querySelector('template')!;
-    }
   }
 }
     `.trim()
@@ -403,14 +387,6 @@ class FooElementDatabindings extends FooElement {
     this.clump!();
     this.good;
     this.zim;
-    {
-      let fooBarElem: ElementTagNameMap['foo-bar'];
-      fooBarElem = document.querySelector('foo-bar')!;
-    }
-    {
-      let templateElem: ElementTagNameMap['template'];
-      templateElem = document.querySelector('template')!;
-    }
   }
 }
     `.trim()
