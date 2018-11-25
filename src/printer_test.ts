@@ -432,7 +432,8 @@ class FooElementDatabindings extends FooElement {
         "FooElement",
         { typeCheckPropertyBindings: true }
       ).trim()
-    ).to.deep.equal(`
+    ).to.deep.equal(
+      `
 class FooElementDatabindings extends FooElement {
   __databindingTypeCheckFunc() {
     this.someString;
@@ -450,7 +451,8 @@ class FooElementDatabindings extends FooElement {
     }
   }
 }
-    `.trim())
+    `.trim()
+    );
   });
 });
 

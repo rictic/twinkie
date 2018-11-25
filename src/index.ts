@@ -207,7 +207,13 @@
 import * as fs from "fs";
 import * as Cheerio from "cheerio";
 import { walkNodes } from "./dom_walker";
-import { AliasMap, AST_NODE, AST_TREE, PROPERTY_ASSIGNMENT_AST_NODE, EXPRESSION } from "./types";
+import {
+  AliasMap,
+  AST_NODE,
+  AST_TREE,
+  PROPERTY_ASSIGNMENT_AST_NODE,
+  EXPRESSION
+} from "./types";
 import { getExpressionsForNode } from "./ast_builder";
 import { nodesToTree } from "./ast_tree_builder";
 import { printTree, printUse } from "./printer";
@@ -248,7 +254,7 @@ export function analyzeSource(htmlSource: string): Analysis {
         // for property bindings, because every property binding needs to
         // be type checked, even when the databinding expression on the
         // right hand side is the same.
-        if (expression.type ===  EXPRESSION.PROPERTY_ASSIGNMENT) {
+        if (expression.type === EXPRESSION.PROPERTY_ASSIGNMENT) {
           propertyBindings.push(expression);
         }
       }
