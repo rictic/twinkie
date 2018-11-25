@@ -317,6 +317,88 @@ describe("ast tree building", () => {
     });
   });
 
+  it("handles items in dom-repeat nodes", () => {
+    const nodes = stringToNodes(`
+        <template is="dom-repeat" items="[[foo]]">
+          [[item.bar]]
+          <template is="dom-repeat" items="[[item.baz]]">
+            [[item.zot]]
+          </template>
+        </template>
+    `);
+
+    expect(nodesToTree(nodes)).to.deep.eq({
+      foo: {
+        children: {},
+        listIndexType: {
+          bar: {
+            children: {},
+            expression: "bar",
+            type: EXPRESSION.VALUE
+          },
+          baz: {
+            children: {},
+            type: EXPRESSION.LIST,
+            expression: "baz",
+            listIndexType: {
+              zot: {
+                children: {},
+                expression: "zot",
+                type: EXPRESSION.VALUE
+              }
+            }
+          }
+        },
+        expression: "foo",
+        type: EXPRESSION.LIST
+      }
+    });
+  });
+
+  it("handles dom-repeats that rename with the as property", () => {
+    const nodes = stringToNodes(`
+        <template is="dom-repeat" items="[[foo]]" as="outer">
+          [[outer.bar]]
+          <template is="dom-repeat" items="[[outer.baz]]" as="inner">
+            [[inner.zot]]
+            [[outer.spam]]
+          </template>
+        </template>
+    `);
+
+    expect(nodesToTree(nodes)).to.deep.eq({
+      foo: {
+        children: {},
+        listIndexType: {
+          bar: {
+            children: {},
+            expression: "bar",
+            type: EXPRESSION.VALUE
+          },
+          baz: {
+            children: {},
+            type: EXPRESSION.LIST,
+            expression: "baz",
+            listIndexType: {
+              zot: {
+                children: {},
+                expression: "zot",
+                type: EXPRESSION.VALUE
+              }
+            }
+          },
+          spam: {
+            children: {},
+            expression: "spam",
+            type: EXPRESSION.VALUE
+          }
+        },
+        expression: "foo",
+        type: EXPRESSION.LIST
+      }
+    });
+  });
+
   it("handles nested nodes", () => {
     const nodes = stringToNodes(`
         <dom-module id="nest">
