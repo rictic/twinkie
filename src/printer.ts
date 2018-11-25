@@ -240,17 +240,6 @@ export function printUse(
       expressionUses = getNodeUses(node, "null!");
     }
     for (const use of expressionUses) {
-      if (config.typeCheckPropertyBindings && use.propertyName && use.tagName) {
-        const varName = `${kebabCaseToCamelCase(use.tagName)}Elem`;
-        ret.push(
-          `    {\n` +
-            `      const ${varName}: ElementTagNameMap['${
-              use.tagName
-            }'] = null!;\n` +
-            `      ${varName}.${use.propertyName} = this.${use.expression};\n` +
-            `    }\n`
-        );
-      }
       if (use.type === undefined) {
         ret.push(`    this.${use.expression};\n`);
       } else {
@@ -270,6 +259,27 @@ export function printUse(
         `      ${varName} = document.querySelector('${tagName}')!;\n` +
         `    }\n`
     );
+  }
+  if (config.typeCheckPropertyBindings) {
+    for (const propertyBinding of analysis.propertyBindings) {
+      let expressionUses;
+      if (config.undefinedCheck) {
+        expressionUses = getNodeUses(propertyBinding, "undefined");
+      } else {
+        expressionUses = getNodeUses(propertyBinding, "null!");
+      }
+      for (const use of expressionUses) {
+        const varName = `${kebabCaseToCamelCase(use.tagName!)}Elem`;
+        ret.push(
+          `    {\n` +
+            `      const ${varName}: ElementTagNameMap['${
+              use.tagName
+            }'] = null!;\n` +
+            `      ${varName}.${use.propertyName} = this.${use.expression};\n` +
+            `    }\n`
+        );
+      }
+    }
   }
 
   ret.push("  }\n", "}\n");

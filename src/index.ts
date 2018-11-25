@@ -207,7 +207,7 @@
 import * as fs from "fs";
 import * as Cheerio from "cheerio";
 import { walkNodes } from "./dom_walker";
-import { AliasMap, AST_NODE, AST_TREE } from "./types";
+import { AliasMap, AST_NODE, AST_TREE, PROPERTY_ASSIGNMENT_AST_NODE, EXPRESSION } from "./types";
 import { getExpressionsForNode } from "./ast_builder";
 import { nodesToTree } from "./ast_tree_builder";
 import { printTree, printUse } from "./printer";
@@ -220,6 +220,7 @@ export interface Config {
 export interface Analysis {
   tree: AST_TREE;
   tagNames: Set<string>;
+  propertyBindings: PROPERTY_ASSIGNMENT_AST_NODE[];
 }
 
 export function analyze(htmlPath: string): Analysis {
@@ -229,22 +230,33 @@ export function analyze(htmlPath: string): Analysis {
 export function analyzeSource(htmlSource: string): Analysis {
   const nodes: AST_NODE[] = [];
   const tagNames = new Set<string>();
+  const propertyBindings: PROPERTY_ASSIGNMENT_AST_NODE[] = [];
   const parsed = Cheerio.parseHTML(htmlSource);
   const aliasMap: AliasMap = {};
 
   parsed.forEach(node => {
     walkNodes(node, aliasMap, (node: CheerioElement, aliasMap: AliasMap) => {
-      nodes.push(...getExpressionsForNode(node, aliasMap));
+      const expressions = getExpressionsForNode(node, aliasMap);
+      nodes.push(...expressions);
       // Cheerio uses a tagName of 'root' to mean something similar to
       // #documentFragment.
       if (node.tagName && node.tagName !== "root") {
         tagNames.add(node.tagName);
       }
+      for (const expression of expressions) {
+        // We do't want to deduplicate property bindings in the same way
+        // for property bindings, because every property binding needs to
+        // be type checked, even when the databinding expression on the
+        // right hand side is the same.
+        if (expression.type ===  EXPRESSION.PROPERTY_ASSIGNMENT) {
+          propertyBindings.push(expression);
+        }
+      }
     });
   });
 
   const tree = nodesToTree(nodes);
-  return { tree, tagNames };
+  return { tree, tagNames, propertyBindings };
 }
 
 export function generateInterface(

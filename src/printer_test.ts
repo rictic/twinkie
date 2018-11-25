@@ -344,26 +344,10 @@ class FooElementDatabindings extends FooElement {
       `
 class FooElementDatabindings extends FooElement {
   __databindingTypeCheckFunc() {
-    {
-      const fooBarElem: ElementTagNameMap['foo-bar'] = null!;
-      fooBarElem.baz = this.qux!.zot;
-    }
     this.qux!.zot;
-    {
-      const fooBarElem: ElementTagNameMap['foo-bar'] = null!;
-      fooBarElem.zim = this.loot!.vo;
-    }
     this.loot!.vo;
     this.kapow;
-    {
-      const templateElem: ElementTagNameMap['template'] = null!;
-      templateElem.zot = this.clump!();
-    }
     this.clump!();
-    {
-      const domIfElem: ElementTagNameMap['dom-if'] = null!;
-      domIfElem.if = this.good;
-    }
     this.good;
     this.zim;
     {
@@ -373,6 +357,22 @@ class FooElementDatabindings extends FooElement {
     {
       let templateElem: ElementTagNameMap['template'];
       templateElem = document.querySelector('template')!;
+    }
+    {
+      const fooBarElem: ElementTagNameMap['foo-bar'] = null!;
+      fooBarElem.baz = this.qux!.zot;
+    }
+    {
+      const fooBarElem: ElementTagNameMap['foo-bar'] = null!;
+      fooBarElem.zim = this.loot!.vo;
+    }
+    {
+      const templateElem: ElementTagNameMap['template'] = null!;
+      templateElem.zot = this.clump!();
+    }
+    {
+      const domIfElem: ElementTagNameMap['dom-if'] = null!;
+      domIfElem.if = this.good;
     }
   }
 }
@@ -417,7 +417,7 @@ class FooElementDatabindings extends FooElement {
     );
   });
 
-  xit("handles binding the same right hand side multiple times", () => {
+  it("handles binding the same right hand side multiple times", () => {
     expect(
       printUse(
         analyzeSource(`
