@@ -416,6 +416,42 @@ class FooElementDatabindings extends FooElement {
     `.trim()
     );
   });
+
+  xit("handles binding the same right hand side multiple times", () => {
+    expect(
+      printUse(
+        analyzeSource(`
+          <paper-card heading="{{someString}}">
+            The line above should pass
+          </paper-card>
+
+          <paper-card haeding="{{someString}}">
+            The line above should fail because haeding doesn't exist
+          </paper-card>
+        `),
+        "FooElement",
+        { typeCheckPropertyBindings: true }
+      ).trim()
+    ).to.deep.equal(`
+class FooElementDatabindings extends FooElement {
+  __databindingTypeCheckFunc() {
+    this.someString;
+    {
+      let paperCardElem: ElementTagNameMap['paper-card'];
+      paperCardElem = document.querySelector('paper-card')!;
+    }
+    {
+      const paperCardElem: ElementTagNameMap['paper-card'] = null!;
+      paperCardElem.heading = this.someString;
+    }
+    {
+      const paperCardElem: ElementTagNameMap['paper-card'] = null!;
+      paperCardElem.haeding = this.someString;
+    }
+  }
+}
+    `.trim())
+  });
 });
 
 describe("printing", () => {
