@@ -213,7 +213,9 @@ export interface AttributeExpression {
   attributeKey: string;
   attributeValue: string;
 }
-export function extractNodeAttributes(node: CheerioElement): AttributeExpression[] {
+export function extractNodeAttributes(
+  node: CheerioElement
+): AttributeExpression[] {
   const ret = [];
   for (const attrKey of Object.keys(node.attribs || {})) {
     ret.push({

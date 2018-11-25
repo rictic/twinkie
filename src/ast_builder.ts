@@ -204,7 +204,11 @@
  *    limitations under the License.
  */
 
-import { extractNodeAttributes, extractNodeContents, AttributeExpression } from "./dom_walker";
+import {
+  extractNodeAttributes,
+  extractNodeContents,
+  AttributeExpression
+} from "./dom_walker";
 import {
   extractExpression,
   stripNegationPrefixes,
@@ -426,13 +430,18 @@ export function getExpressionsForNode(
           aliasMap
         )
       );
-    } else if (writesToProperty(attributeExpression) &&
-               node.type === 'tag' && node.name) {
+    } else if (
+      writesToProperty(attributeExpression) &&
+      node.type === "tag" &&
+      node.name
+    ) {
       const expressions = expressionsToAstNodes(
-        extractExpression(attributeExpression.attributeValue, aliasMap));
+        extractExpression(attributeExpression.attributeValue, aliasMap)
+      );
       let tagName = node.name;
-      const isAttribute =
-          attributeExpressions.find((ae) => ae.attributeKey === 'is');
+      const isAttribute = attributeExpressions.find(
+        ae => ae.attributeKey === "is"
+      );
       if (isAttribute != null) {
         tagName = isAttribute.attributeValue;
       }
@@ -448,7 +457,7 @@ export function getExpressionsForNode(
           propertyName: attributeExpression.attributeKey
         });
       }
-     } else {
+    } else {
       astNodes.push(
         ...expressionsToAstNodes(
           extractExpression(attributeExpression.attributeValue, aliasMap)
@@ -472,7 +481,7 @@ export function getExpressionsForNode(
  *    fooElem.setAttribute('left-hand-side', resultOfBindingExpression);
  */
 function writesToProperty(attributeExpression: AttributeExpression) {
-  if (attributeExpression.attributeKey.endsWith('$')) {
+  if (attributeExpression.attributeKey.endsWith("$")) {
     return false;
   }
   const value = attributeExpression.attributeValue;

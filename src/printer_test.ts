@@ -216,7 +216,7 @@ describe("print use", () => {
         <p>[[a.f(1, 2, a.b)]]</p>
     `),
         "FooElement",
-        {undefinedCheck: true}
+        { undefinedCheck: true }
       ).trim()
     ).to.deep.equal(
       `
@@ -338,7 +338,7 @@ class FooElementDatabindings extends FooElement {
       <foo-bar blip="bip-{{zim}}-zop"></foo-bar>
     `),
         "FooElement",
-        {typeCheckPropertyBindings: true}
+        { typeCheckPropertyBindings: true }
       ).trim()
     ).to.deep.equal(
       `
@@ -378,7 +378,7 @@ class FooElementDatabindings extends FooElement {
 }
     `.trim()
     );
-  })
+  });
 
   it("handles binding to custom element properties", () => {
     expect(
@@ -391,7 +391,7 @@ class FooElementDatabindings extends FooElement {
       <foo-bar blip="bip-{{zim}}-zop"></foo-bar>
     `),
         "FooElement",
-        {typeCheckPropertyBindings: false}
+        { typeCheckPropertyBindings: false }
       ).trim()
     ).to.deep.equal(
       `
@@ -415,7 +415,7 @@ class FooElementDatabindings extends FooElement {
 }
     `.trim()
     );
-  })
+  });
 });
 
 describe("printing", () => {

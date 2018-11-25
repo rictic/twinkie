@@ -226,11 +226,11 @@ export function printTree(tree: AST_TREE, interfaceName = "ElementInterface") {
 export function printUse(
   analysis: Analysis,
   realType: string,
-  config: Config={},
+  config: Config = {}
 ) {
   const ret = [
     `class ${realType}Databindings extends ${realType} {\n`,
-    "  __databindingTypeCheckFunc() {\n",
+    "  __databindingTypeCheckFunc() {\n"
   ];
   for (const node of Object.values(analysis.tree)) {
     let expressionUses;
@@ -244,9 +244,11 @@ export function printUse(
         const varName = `${kebabCaseToCamelCase(use.tagName)}Elem`;
         ret.push(
           `    {\n` +
-          `      const ${varName}: ElementTagNameMap['${use.tagName}'] = null!;\n` +
-          `      ${varName}.${use.propertyName} = this.${use.expression};\n` +
-          `    }\n`
+            `      const ${varName}: ElementTagNameMap['${
+              use.tagName
+            }'] = null!;\n` +
+            `      ${varName}.${use.propertyName} = this.${use.expression};\n` +
+            `    }\n`
         );
       }
       if (use.type === undefined) {
@@ -264,10 +266,10 @@ export function printUse(
     const varName = `${kebabCaseToCamelCase(tagName)}Elem`;
     ret.push(
       `    {\n` +
-      `      let ${varName}: ElementTagNameMap['${tagName}'];\n` +
-      `      ${varName} = document.querySelector('${tagName}')!;\n` +
-      `    }\n`
-    )
+        `      let ${varName}: ElementTagNameMap['${tagName}'];\n` +
+        `      ${varName} = document.querySelector('${tagName}')!;\n` +
+        `    }\n`
+    );
   }
 
   ret.push("  }\n", "}\n");
@@ -275,38 +277,44 @@ export function printUse(
 }
 
 type NodeUse = {
-  expression: string,
-  type: string|undefined,
-  tagName?: string,
-  propertyName?: string,
+  expression: string;
+  type: string | undefined;
+  tagName?: string;
+  propertyName?: string;
 };
 
-function *getNodeUses(
-    node: AST_NODE, argValue: string):IterableIterator<NodeUse> {
+function* getNodeUses(
+  node: AST_NODE,
+  argValue: string
+): IterableIterator<NodeUse> {
   switch (node.type) {
     case EXPRESSION.LIST: {
-      yield {expression: `${node.expression}!`, type: `Array<any>`};
+      yield { expression: `${node.expression}!`, type: `Array<any>` };
       if (node.children) {
         for (const childNodeExpression of Object.keys(node.children)) {
-          const innerUses =
-              getNodeUses(node.children[childNodeExpression], argValue);
+          const innerUses = getNodeUses(
+            node.children[childNodeExpression],
+            argValue
+          );
           for (const innerUse of innerUses) {
             yield {
               expression: `${node.expression}!.${innerUse.expression}`,
-              type: innerUse.type,
+              type: innerUse.type
             };
           }
         }
       }
       if (node.listIndexType) {
         for (const listNodeExpression of Object.keys(node.listIndexType)) {
-          const innerUses =
-              getNodeUses(node.listIndexType[listNodeExpression], argValue);
+          const innerUses = getNodeUses(
+            node.listIndexType[listNodeExpression],
+            argValue
+          );
           for (const innerUse of innerUses) {
             yield {
               expression: `${node.expression}![0]!.${innerUse.expression}`,
-              type: innerUse.type,
-            }
+              type: innerUse.type
+            };
           }
         }
       }
@@ -314,15 +322,17 @@ function *getNodeUses(
       break;
     }
     case EXPRESSION.VALUE: {
-      yield {expression: `${node.expression}`, type: undefined};
+      yield { expression: `${node.expression}`, type: undefined };
       if (node.children) {
         for (const childNodeExpression of Object.keys(node.children)) {
-          const childUses =
-              getNodeUses(node.children[childNodeExpression], argValue);
+          const childUses = getNodeUses(
+            node.children[childNodeExpression],
+            argValue
+          );
           for (const childUse of childUses) {
             yield {
               expression: `${node.expression}!.${childUse.expression}`,
-              type: childUse.type,
+              type: childUse.type
             };
           }
         }
@@ -339,7 +349,7 @@ function *getNodeUses(
       }
       yield {
         expression: `${node.expression}!(${argList.join(", ")})`,
-        type: undefined,
+        type: undefined
       };
 
       break;
@@ -354,8 +364,7 @@ function *getNodeUses(
           expression: exprs[exprs.length - 1].expression,
           type: undefined,
           tagName: node.tagName,
-          propertyName:
-            kebabCaseToCamelCase(node.propertyName)
+          propertyName: kebabCaseToCamelCase(node.propertyName)
         };
       }
       break;

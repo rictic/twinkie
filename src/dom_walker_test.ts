@@ -234,7 +234,7 @@ describe("extracting contents", () => {
     const parsed = Cheerio.parseHTML("<div><!-- <p>[[a]]</p> --></div>");
     expect(
       parsed
-        .reduce<Array<string|null>>((accum, node) => {
+        .reduce<Array<string | null>>((accum, node) => {
           accum.push(extractNodeContents(node));
           return accum;
         }, [])

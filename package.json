@@ -6,7 +6,7 @@
     "test": "mocha -r ts-node/register src/*_test.ts",
     "test-watch": "mocha -R spec -r ts-node/register src/*_test.ts --watch-extensions=ts -w",
     "build": "tsc",
-    "format": "prettier -w src/*.ts",
+    "format": "prettier --write src/*.ts",
     "format-lint": "prettier --list-different src/*.ts"
   },
   "devDependencies": {

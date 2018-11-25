@@ -237,14 +237,14 @@ export function analyzeSource(htmlSource: string): Analysis {
       nodes.push(...getExpressionsForNode(node, aliasMap));
       // Cheerio uses a tagName of 'root' to mean something similar to
       // #documentFragment.
-      if (node.tagName && node.tagName !== 'root') {
+      if (node.tagName && node.tagName !== "root") {
         tagNames.add(node.tagName);
       }
     });
   });
 
   const tree = nodesToTree(nodes);
-  return {tree, tagNames};
+  return { tree, tagNames };
 }
 
 export function generateInterface(
@@ -257,11 +257,7 @@ export function generateInterface(
 export function generateFauxUse(
   htmlPath: string,
   interfaceName: string = "TemplateInterface",
-  config: Config,
+  config: Config
 ) {
-  return printUse(
-    analyze(htmlPath),
-    interfaceName,
-    config
-  );
+  return printUse(analyze(htmlPath), interfaceName, config);
 }
